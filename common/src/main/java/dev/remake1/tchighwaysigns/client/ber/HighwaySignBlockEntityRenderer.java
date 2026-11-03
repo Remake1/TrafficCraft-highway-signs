@@ -1,0 +1,162 @@
+package dev.remake1.tchighwaysigns.client.ber;
+
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
+
+import de.mrjulsen.mcdragonlib.util.DLUtils;
+import dev.remake1.tchighwaysigns.HighwaySigns;
+import dev.remake1.tchighwaysigns.block.HighwaySignBlock;
+import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
+import dev.remake1.tchighwaysigns.config.ModClientConfig;
+import dev.remake1.tchighwaysigns.data.HighwayArrow;
+import dev.remake1.tchighwaysigns.data.HighwaySignLayout;
+import dev.remake1.tchighwaysigns.data.HighwaySignLayout.LineLayout;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.state.BlockState;
+
+/**
+ * Renders text and arrows of a highway sign. The panel itself (background and border) is part of the baked
+ * block model, so only the dynamic content is drawn here. The layout is cached in the block entity, so this
+ * renderer does no text measuring per frame.
+ */
+public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<HighwaySignBlockEntity> {
+
+    public static final ResourceLocation ARROWS_TEXTURE = DLUtils.resourceLocation(HighwaySigns.MOD_ID, "textures/block/highway_sign/arrows.png");
+
+    /** Distance of the front face from the block center. */
+    private static final float FACE_OFFSET = 0.5f - (float)HighwaySignBlock.PANEL_THICKNESS / 16.0f;
+    private static final float BOX_Z = 0.001f;
+    private static final float TEXT_Z = 0.002f;
+    private static final float ARROW_Z = 0.003f;
+    private static final int DEFAULT_VIEW_DISTANCE = 96;
+
+    private final Font font;
+
+    public HighwaySignBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
+        this.font = context.getFont();
+    }
+
+    @Override
+    public void render(HighwaySignBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        BlockState state = blockEntity.getBlockState();
+        if (!(state.getBlock() instanceof HighwaySignBlock)) {
+            return;
+        }
+
+        HighwaySignLayout layout = blockEntity.getLayout(font::width, font.lineHeight);
+        if (layout.isEmpty()) {
+            return;
+        }
+
+        Direction facing = state.getValue(HighwaySignBlock.FACING);
+
+        poseStack.pushPose();
+        // Local space: +X = right side of the sign (seen from the front), +Y = up, +Z = towards the viewer.
+        poseStack.translate(0.5f, 0.5f, 0.5f);
+        poseStack.mulPose(Axis.YP.rotationDegrees(-facing.toYRot()));
+        // Origin: top left corner of the front face. Layout coordinates point down, so y is negated below.
+        poseStack.translate(-0.5f, layout.getHeight() - 0.5f, -FACE_OFFSET);
+
+        // Arrows always use the text color of the sign. Only the text uses the (optional) color of its line.
+        final int signTextColor = blockEntity.getData().getTextColor();
+        for (LineLayout line : layout.getLines()) {
+            final int color = line.color();
+            if (line.hasHighlight()) {
+                renderBox(poseStack, bufferSource, line, packedLight);
+            }
+
+            if (line.hasText()) {
+                poseStack.pushPose();
+                poseStack.translate(line.textX(), -line.textY(), TEXT_Z);
+                poseStack.scale(line.textScale(), -line.textScale(), line.textScale());
+                font.drawInBatch(line.text(), 0, 0, color, false, poseStack.last().pose(), bufferSource, Font.DisplayMode.POLYGON_OFFSET, 0, packedLight);
+                poseStack.popPose();
+            }
+
+            if (line.hasArrow()) {
+                renderArrow(poseStack, bufferSource, line, signTextColor, packedLight);
+            }
+        }
+
+        poseStack.popPose();
+    }
+
+    /** Draws the colored box behind the text, using the white cell of the arrow atlas (same render batch as arrows). */
+    private void renderBox(PoseStack poseStack, MultiBufferSource bufferSource, LineLayout line, int packedLight) {
+        VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(ARROWS_TEXTURE));
+        Matrix4f pose = poseStack.last().pose();
+        Matrix3f normal = poseStack.last().normal();
+
+        int color = line.highlightColor();
+        float r = ((color >> 16) & 0xFF) / 255.0f;
+        float g = ((color >> 8) & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+        float u = HighwayArrow.WHITE_U;
+        float v = HighwayArrow.WHITE_V;
+
+        vertex(consumer, pose, normal, line.boxX0(), -line.boxY0(), BOX_Z, u, v, r, g, b, packedLight);
+        vertex(consumer, pose, normal, line.boxX0(), -line.boxY1(), BOX_Z, u, v, r, g, b, packedLight);
+        vertex(consumer, pose, normal, line.boxX1(), -line.boxY1(), BOX_Z, u, v, r, g, b, packedLight);
+        vertex(consumer, pose, normal, line.boxX1(), -line.boxY0(), BOX_Z, u, v, r, g, b, packedLight);
+    }
+
+    private void renderArrow(PoseStack poseStack, MultiBufferSource bufferSource, LineLayout line, int color, int packedLight) {
+        VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(ARROWS_TEXTURE));
+        Matrix4f pose = poseStack.last().pose();
+        Matrix3f normal = poseStack.last().normal();
+
+        float r = ((color >> 16) & 0xFF) / 255.0f;
+        float g = ((color >> 8) & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+
+        float x0 = line.arrowX();
+        float x1 = line.arrowX() + line.arrowSize();
+        float yTop = -line.arrowY();
+        float yBottom = -(line.arrowY() + line.arrowSize());
+        float u0 = line.arrow().getU0();
+        float u1 = line.arrow().getU1();
+        float v0 = line.arrow().getV0();
+        float v1 = line.arrow().getV1();
+
+        vertex(consumer, pose, normal, x0, yTop, ARROW_Z, u0, v0, r, g, b, packedLight);
+        vertex(consumer, pose, normal, x0, yBottom, ARROW_Z, u0, v1, r, g, b, packedLight);
+        vertex(consumer, pose, normal, x1, yBottom, ARROW_Z, u1, v1, r, g, b, packedLight);
+        vertex(consumer, pose, normal, x1, yTop, ARROW_Z, u1, v0, r, g, b, packedLight);
+    }
+
+    private static void vertex(VertexConsumer consumer, Matrix4f pose, Matrix3f normal, float x, float y, float z, float u, float v, float r, float g, float b, int light) {
+        consumer.vertex(pose, x, y, z)
+            .color(r, g, b, 1.0f)
+            .uv(u, v)
+            .overlayCoords(OverlayTexture.NO_OVERLAY)
+            .uv2(light)
+            .normal(normal, 0, 0, 1)
+            .endVertex();
+    }
+
+    @Override
+    public boolean shouldRenderOffScreen(HighwaySignBlockEntity blockEntity) {
+        // Large signs reach into neighbouring chunk sections. Without this the content disappears when the anchor's section is culled.
+        return true;
+    }
+
+    @Override
+    public int getViewDistance() {
+        try {
+            return ModClientConfig.TEXT_RENDER_DISTANCE.get();
+        } catch (Exception e) {
+            return DEFAULT_VIEW_DISTANCE;
+        }
+    }
+}

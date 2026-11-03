@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "${modid}",
+  "version": "${version}",
+  "name": "${display_name}",
+  "description": "${description}",
+  "authors": [
+    "${authors}"
+  ],
+  "contact": {
+    "homepage": "${homepage}",
+    "issues": "${issues}",
+    "sources": "${source}"
+  },
+  "license": "${license}",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.remake1.tchighwaysigns.fabric.HighwaySignsFabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=${java_version}",
+    "fabric-api": "*",
+    "architectury": "*",
+    "forgeconfigapiport": "*",
+    "dragonlib": ">=${dragonlib_version}",
+    "trafficcraft": ">=1.20.1-beta-1.2.0"
+  }
+}
