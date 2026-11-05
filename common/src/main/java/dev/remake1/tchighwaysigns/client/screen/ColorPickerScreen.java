@@ -218,10 +218,6 @@ public class ColorPickerScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        redBox.tick();
-        greenBox.tick();
-        blueBox.tick();
-        hexBox.tick();
         // Keep the parent alive, e.g. so that the sign editor still notices when its block is removed.
         if (parent != null) {
             parent.tick();
@@ -310,7 +306,20 @@ public class ColorPickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics);
+        // Draws the background (see below) and all widgets.
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        if (inOldPreview(mouseX, mouseY)) {
+            graphics.renderTooltip(font, Component.translatable(KEY + "old"), mouseX, mouseY);
+        } else if (inNewPreview(mouseX, mouseY)) {
+            graphics.renderTooltip(font, Component.translatable(KEY + "new"), mouseX, mouseY);
+        }
+    }
+
+    /** Draws everything behind the widgets. {@link Screen#render} calls this before it draws the widgets. */
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(graphics, mouseX, mouseY, partialTick);
 
         final int left = left();
         final int top = pickerTop();
@@ -328,14 +337,6 @@ public class ColorPickerScreen extends Screen {
         graphics.drawString(font, greenBox.getMessage(), labelX, greenBox.getY() + 3, TEXT_COLOR);
         graphics.drawString(font, blueBox.getMessage(), labelX, blueBox.getY() + 3, TEXT_COLOR);
         graphics.drawString(font, hexBox.getMessage(), labelX, hexBox.getY() + 3, TEXT_COLOR);
-
-        super.render(graphics, mouseX, mouseY, partialTick);
-
-        if (inOldPreview(mouseX, mouseY)) {
-            graphics.renderTooltip(font, Component.translatable(KEY + "old"), mouseX, mouseY);
-        } else if (inNewPreview(mouseX, mouseY)) {
-            graphics.renderTooltip(font, Component.translatable(KEY + "new"), mouseX, mouseY);
-        }
     }
 
     private void renderSquare(GuiGraphics graphics, int x, int y) {

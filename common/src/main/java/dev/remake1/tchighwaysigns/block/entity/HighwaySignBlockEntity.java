@@ -9,6 +9,7 @@ import dev.remake1.tchighwaysigns.data.HighwaySignLayout;
 import dev.remake1.tchighwaysigns.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -60,8 +61,8 @@ public class HighwaySignBlockEntity extends BlockEntity {
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return saveWithoutMetadata();
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
     }
 
     @Override
@@ -70,8 +71,8 @@ public class HighwaySignBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void load(CompoundTag compound) {
-        super.load(compound);
+    protected void loadAdditional(CompoundTag compound, HolderLookup.Provider registries) {
+        super.loadAdditional(compound, registries);
         if (compound.contains(NBT_DATA)) {
             data = HighwaySignData.fromNbt(compound.getCompound(NBT_DATA));
         }
@@ -84,9 +85,9 @@ public class HighwaySignBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         tag.put(NBT_DATA, data.toNbt());
-        super.saveAdditional(tag);
+        super.saveAdditional(tag, registries);
     }
 
     public Direction getFacing() {
@@ -94,17 +95,9 @@ public class HighwaySignBlockEntity extends BlockEntity {
         return state.hasProperty(HighwaySignBlock.FACING) ? state.getValue(HighwaySignBlock.FACING) : Direction.NORTH;
     }
 
-    /** @return A box containing all cells of this sign. */
+    /** @return A box containing all cells of this sign. Used to frustum-cull the renderer on NeoForge. */
     public AABB getSignBounds() {
         BlockPos far = HighwaySignBlock.cellPos(getBlockPos(), getFacing(), data.getWidth() - 1, data.getHeight() - 1);
         return new AABB(getBlockPos()).minmax(new AABB(far));
-    }
-
-    /**
-     * Used by Forge ({@code IForgeBlockEntity#getRenderBoundingBox}) to frustum-cull the block entity renderer.
-     * Not annotated with {@code @Override}, because the method does not exist in vanilla.
-     */
-    public AABB getRenderBoundingBox() {
-        return getSignBounds();
     }
 }

@@ -1,13 +1,13 @@
 package dev.remake1.tchighwaysigns.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class ModClientConfig {
 
-    public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+    public static final ModConfigSpec SPEC;
 
-    public static final ForgeConfigSpec.ConfigValue<Integer> TEXT_RENDER_DISTANCE;
+    public static final ModConfigSpec.ConfigValue<Integer> TEXT_RENDER_DISTANCE;
 
     static {
         BUILDER.push("rendering");

@@ -10,7 +10,7 @@ import dev.remake1.tchighwaysigns.registry.ModBlockEntities;
 import dev.remake1.tchighwaysigns.registry.ModBlocks;
 import dev.remake1.tchighwaysigns.registry.ModItems;
 import dev.remake1.tchighwaysigns.registry.ModNetworkManager;
-import net.fabricmc.api.EnvType;
+import dev.architectury.utils.Env;
 
 public final class HighwaySigns {
     public static final String MOD_ID = "tchighwaysigns";
@@ -24,7 +24,7 @@ public final class HighwaySigns {
         ModNetworkManager.init();
         CrossPlatform.registerConfig();
 
-        if (Platform.getEnv() == EnvType.CLIENT) {
+        if (Platform.getEnvironment() == Env.CLIENT) {
             ClientInitWrapper.init();
         }
     }

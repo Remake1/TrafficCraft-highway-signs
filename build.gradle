@@ -18,16 +18,6 @@ subprojects {
     apply plugin: 'architectury-plugin'
     apply plugin: 'maven-publish'
 
-    configurations.configureEach {
-        if (rootProject.hasProperty("lwjgl_version")) {
-            resolutionStrategy.eachDependency { details ->
-                if (details.requested.group == "org.lwjgl") {
-                    details.useVersion rootProject.lwjgl_version
-                }
-            }
-        }
-    }
-
     base {
         archivesName = "$rootProject.archives_name-$project.name"
     }
@@ -36,6 +26,7 @@ subprojects {
         maven { url = "https://maven.mrjulsen.net" } // DragonLib
         maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" } // Forge Config API Port
         maven { url = "https://maven.parchmentmc.org" } // ParchmentMC
+        maven { url = "https://maven.neoforged.net/releases" } // NeoForge
         exclusiveContent { // TrafficCraft
             forRepository { maven { url = "https://api.modrinth.com/maven" } }
             filter { includeGroup "maven.modrinth" }
@@ -68,12 +59,13 @@ subprojects {
             "description": rootProject.description,
             "next_unsupported_minecraft_version": rootProject.next_unsupported_minecraft_version,
             "trafficcraft_version": rootProject.trafficcraft_version,
-            "forge_loader_version": rootProject.forge_loader_version,
-            "forge_dependency_version": rootProject.forge_dependency_version,
+            "neoforge_loader_version": rootProject.neoforge_loader_version,
+            "neoforge_dependency_version": rootProject.neoforge_dependency_version,
+            "architectury_api_version": rootProject.architectury_api_version,
             "fabric_loader_version": rootProject.fabric_loader_version,
             "java_version": rootProject.java_version
         ]
-        filesMatching(['pack.mcmeta', 'fabric.mod.json', 'META-INF/mods.toml']) {
+        filesMatching(['pack.mcmeta', 'fabric.mod.json', 'META-INF/neoforge.mods.toml']) {
             expand expandProps
         }
         inputs.properties(expandProps)
@@ -81,14 +73,14 @@ subprojects {
 
     java {
         withSourcesJar()
-        // Also used by the run* tasks: Mixin 0.8.5 cannot run on newer JDKs (e.g. 25).
+        // Also used by the run* tasks, so the game runs on the Java version Minecraft 1.21.1 ships with.
         toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
+            languageVersion = JavaLanguageVersion.of(rootProject.java_version as int)
         }
     }
 
     tasks.withType(JavaCompile).configureEach {
-        it.options.release = 17
+        it.options.release = rootProject.java_version as int
     }
 
     publishing {

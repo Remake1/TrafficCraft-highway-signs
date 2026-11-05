@@ -1,17 +1,19 @@
 package dev.remake1.tchighwaysigns.network.packets.cts;
 
-import java.util.function.Supplier;
-
+import dev.architectury.networking.NetworkManager;
 import dev.architectury.networking.NetworkManager.PacketContext;
+import dev.remake1.tchighwaysigns.HighwaySigns;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock.ResizeResult;
 import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
 import dev.remake1.tchighwaysigns.data.HighwaySignData;
 import dev.remake1.tchighwaysigns.network.packets.stc.HighwaySignResultPacket;
-import dev.remake1.tchighwaysigns.registry.ModNetworkManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,32 +28,32 @@ import net.minecraft.world.phys.Vec3;
  * blocking the network handler while waiting for the server thread can stall the server (and time out).
  * </p>
  */
-public class HighwaySignPacket {
+public record HighwaySignPacket(BlockPos pos, HighwaySignData data) implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<HighwaySignPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(HighwaySigns.MOD_ID, "highway_sign"));
+    public static final StreamCodec<FriendlyByteBuf, HighwaySignPacket> STREAM_CODEC = StreamCodec.ofMember(HighwaySignPacket::encode, HighwaySignPacket::decode);
 
     /** Max distance between the player and the sign anchor. */
     private static final double MAX_DISTANCE = 12.0D;
 
-    private final BlockPos pos;
-    private final HighwaySignData data;
-
-    public HighwaySignPacket(BlockPos anchor, HighwaySignData data) {
-        this.pos = anchor;
-        this.data = data;
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public void encode(FriendlyByteBuf buf) {
+    private void encode(FriendlyByteBuf buf) {
         buf.writeBlockPos(pos);
         buf.writeNbt(data.toNbt());
     }
 
-    public static HighwaySignPacket decode(FriendlyByteBuf buf) {
+    private static HighwaySignPacket decode(FriendlyByteBuf buf) {
         BlockPos pos = buf.readBlockPos();
         CompoundTag nbt = buf.readNbt();
         return new HighwaySignPacket(pos, nbt == null ? null : HighwaySignData.fromNbt(nbt));
     }
 
-    public static void handle(HighwaySignPacket packet, Supplier<PacketContext> context) {
-        if (!(context.get().getPlayer() instanceof ServerPlayer sender) || packet.pos == null || packet.data == null) {
+    public static void handle(HighwaySignPacket packet, PacketContext context) {
+        if (!(context.getPlayer() instanceof ServerPlayer sender) || packet.pos == null || packet.data == null) {
             return;
         }
         MinecraftServer server = sender.getServer();
@@ -62,7 +64,7 @@ public class HighwaySignPacket {
         // Runs on the server thread (immediately, if we are already on it). Never blocks the calling thread.
         server.execute(() -> {
             ResizeResult result = apply(sender, packet.pos, packet.data);
-            ModNetworkManager.CHANNEL.sendToPlayer(sender, new HighwaySignResultPacket(packet.pos, result));
+            NetworkManager.sendToPlayer(sender, new HighwaySignResultPacket(packet.pos, result));
         });
     }
 

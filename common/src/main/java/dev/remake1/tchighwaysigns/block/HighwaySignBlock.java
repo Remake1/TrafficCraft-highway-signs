@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.mojang.serialization.MapCodec;
+
 import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
 import dev.remake1.tchighwaysigns.client.ClientWrapper;
 import dev.remake1.tchighwaysigns.data.HighwaySignData;
@@ -15,7 +17,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -85,18 +87,27 @@ public class HighwaySignBlock extends BaseEntityBlock implements SimpleWaterlogg
         INVALID;
     }
 
+    public static final MapCodec<HighwaySignBlock> CODEC = simpleCodec(HighwaySignBlock::new);
+
     /** Suppresses the "remove the whole sign" logic while the sign itself changes its cells. Server thread only. */
     private static int structureChangeDepth = 0;
 
-    public HighwaySignBlock() {
-        super(BlockBehaviour.Properties.of()
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of()
             .mapColor(MapColor.METAL)
             .strength(1.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion()
             .pushReaction(PushReaction.BLOCK)
-            .sound(SoundType.LANTERN)
-        );
+            .sound(SoundType.LANTERN);
+    }
+
+    public HighwaySignBlock() {
+        this(defaultProperties());
+    }
+
+    public HighwaySignBlock(BlockBehaviour.Properties properties) {
+        super(properties);
 
         this.registerDefaultState(this.stateDefinition.any()
             .setValue(FACING, Direction.NORTH)
@@ -109,6 +120,11 @@ public class HighwaySignBlock extends BaseEntityBlock implements SimpleWaterlogg
             .setValue(EDGE_RIGHT, true)
             .setValue(MOUNTED, false)
         );
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -180,7 +196,7 @@ public class HighwaySignBlock extends BaseEntityBlock implements SimpleWaterlogg
     }
 
     @Override
-    public boolean isPathfindable(BlockState pState, BlockGetter pLevel, BlockPos pPos, PathComputationType pType) {
+    protected boolean isPathfindable(BlockState pState, PathComputationType pType) {
         return false;
     }
 
@@ -266,7 +282,6 @@ public class HighwaySignBlock extends BaseEntityBlock implements SimpleWaterlogg
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public FluidState getFluidState(BlockState pState) {
         return pState.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(pState);
     }
@@ -274,7 +289,7 @@ public class HighwaySignBlock extends BaseEntityBlock implements SimpleWaterlogg
     /* BREAKING */
 
     @Override
-    public void playerWillDestroy(Level pLevel, BlockPos pPos, BlockState pState, Player pPlayer) {
+    public BlockState playerWillDestroy(Level pLevel, BlockPos pPos, BlockState pState, Player pPlayer) {
         if (!pLevel.isClientSide && !isAnchor(pState)) {
             BlockPos anchor = anchorOf(pState, pPos);
             if (isCellOf(pLevel, anchor, anchor, pState.getValue(FACING))) {
@@ -283,11 +298,10 @@ public class HighwaySignBlock extends BaseEntityBlock implements SimpleWaterlogg
                 pLevel.destroyBlock(anchor, drop, pPlayer);
             }
         }
-        super.playerWillDestroy(pLevel, pPos, pState, pPlayer);
+        return super.playerWillDestroy(pLevel, pPos, pState, pPlayer);
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pMovedByPiston) {
         if (!pLevel.isClientSide && !pState.is(pNewState.getBlock()) && structureChangeDepth <= 0) {
             Direction facing = pState.getValue(FACING);
@@ -393,16 +407,15 @@ public class HighwaySignBlock extends BaseEntityBlock implements SimpleWaterlogg
     /* INTERACTION */
 
     @Override
-    public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
-        ItemStack stack = pPlayer.getItemInHand(pHand);
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
         if (stack.getItem() instanceof BrushItem || !stack.is(ModTags.WRENCHES) || pPlayer.isShiftKeyDown()) {
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
 
         if (pLevel.isClientSide && pLevel.getBlockEntity(anchorOf(pState, pPos)) instanceof HighwaySignBlockEntity blockEntity) {
             ClientWrapper.showHighwaySignEditor(blockEntity);
         }
-        return InteractionResult.sidedSuccess(pLevel.isClientSide);
+        return ItemInteractionResult.sidedSuccess(pLevel.isClientSide);
     }
 
     /* BLOCK ENTITY */

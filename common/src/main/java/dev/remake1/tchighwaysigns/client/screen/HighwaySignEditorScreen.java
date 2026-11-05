@@ -6,6 +6,7 @@ import java.util.function.IntConsumer;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import dev.architectury.networking.NetworkManager;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock.ResizeResult;
 import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
 import dev.remake1.tchighwaysigns.client.HighwaySignClipboard;
@@ -19,7 +20,6 @@ import dev.remake1.tchighwaysigns.data.HighwaySignLine;
 import dev.remake1.tchighwaysigns.data.HighwaySignLine.ArrowSide;
 import dev.remake1.tchighwaysigns.data.TextAlignment;
 import dev.remake1.tchighwaysigns.network.packets.cts.HighwaySignPacket;
-import dev.remake1.tchighwaysigns.registry.ModNetworkManager;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -344,7 +344,7 @@ public class HighwaySignEditorScreen extends Screen {
         waitingForServer = true;
         waitTicks = 0;
         setStatus(Component.translatable(KEY + "saving"), false);
-        ModNetworkManager.CHANNEL.sendToServer(new HighwaySignPacket(anchor, data.copy()));
+        NetworkManager.sendToServer(new HighwaySignPacket(anchor, data.copy()));
     }
 
     public BlockPos getAnchor() {
@@ -377,13 +377,13 @@ public class HighwaySignEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (mouseY >= linesTop() && data.getLines().size() > visibleLines) {
-            scrollOffset = Math.max(0, Math.min(data.getLines().size() - visibleLines, scrollOffset - (int)Math.signum(delta)));
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (mouseY >= linesTop() && data.getLines().size() > visibleLines && scrollY != 0) {
+            scrollOffset = Math.max(0, Math.min(data.getLines().size() - visibleLines, scrollOffset - (int)Math.signum(scrollY)));
             requestRebuild();
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -393,14 +393,7 @@ public class HighwaySignEditorScreen extends Screen {
             rebuildWidgets();
         }
 
-        renderBackground(graphics);
-        graphics.drawCenteredString(font, title, width / 2, 5, TEXT_COLOR);
-        renderPreview(graphics);
-
-        for (Label label : labels) {
-            graphics.drawString(font, label.text(), label.x(), label.y(), TEXT_COLOR);
-        }
-
+        // Draws the background (see below) and all widgets.
         super.render(graphics, mouseX, mouseY, partialTick);
 
         for (Swatch swatch : swatches) {
@@ -417,6 +410,18 @@ public class HighwaySignEditorScreen extends Screen {
 
         if (status != null) {
             graphics.drawCenteredString(font, status, width / 2, height - 36, statusIsError ? STATUS_COLOR : TEXT_COLOR);
+        }
+    }
+
+    /** Draws everything behind the widgets. {@link Screen#render} calls this before it draws the widgets. */
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(graphics, mouseX, mouseY, partialTick);
+        graphics.drawCenteredString(font, title, width / 2, 5, TEXT_COLOR);
+        renderPreview(graphics);
+
+        for (Label label : labels) {
+            graphics.drawString(font, label.text(), label.x(), label.y(), TEXT_COLOR);
         }
     }
 

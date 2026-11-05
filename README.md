@@ -4,7 +4,8 @@ An addon for [TrafficCraft](https://modrinth.com/mod/trafficcraft).
 
 This addon adds customizable highway signs to TrafficCraft mod. Add custom text in different sizes, change colors and backgrounds, add arrows and more. From 1x1 to 4x3 blocks size. 
 
-- Requires: TrafficCraft `1.20.1-1.1.3` or newer (including `1.2.0` betas). Architectury API, DragonLib and Forge Config API Port come with TrafficCraft, so they don't need to be installed separately. Fabric also needs Fabric API.
+- Minecraft `1.21.1`, Fabric or NeoForge.
+- Requires: TrafficCraft `1.21.1-1.1.3` or newer (including `1.2.0` betas). Architectury API, DragonLib and Forge Config API Port come with TrafficCraft, so they don't need to be installed separately. Fabric also needs Fabric API.
 
 
 ## Screenshots
@@ -28,16 +29,16 @@ Breaking any block of a sign removes the whole sign.
 
 ## Development
 
-Use **JDK 17** for the game.
+Use **JDK 21** for the game.
 ```sh
-./gradlew build               # jars in fabric/build/libs and forge/build/libs
-./gradlew :fabric:runClient   # dev client (also :forge:runClient)
+./gradlew build               # jars in fabric/build/libs and neoforge/build/libs
+./gradlew :fabric:runClient   # dev client (also :neoforge:runClient)
 ./gradlew :fabric:runServer   # dev server (accept the EULA in fabric/run/eula.txt yourself)
 ```
 
 TrafficCraft comes from the Modrinth maven by version ID. To update it:
-1. Change `trafficcraft_fabric_version` and `trafficcraft_forge_version` in `gradle.properties`. The IDs are listed at `https://api.modrinth.com/v2/project/trafficcraft/version`.
+1. Change `trafficcraft_fabric_version` and `trafficcraft_neoforge_version` in `gradle.properties`. The IDs are listed at `https://api.modrinth.com/v2/project/trafficcraft/version`.
 
-The addon does not use DragonLib's API, only Architectury (compiled against `9.1.12`, the version bundled with TrafficCraft's DragonLib). DragonLib is only a dev runtime dependency (`modLocalRuntime`), because TrafficCraft needs it. Keep it that way: TrafficCraft 1.1.x ships DragonLib 2.x and 1.2.x needs DragonLib 3.x, and only one can be loaded.
+The addon does not use DragonLib's API, only Architectury (compiled against `13.0.6`, the version bundled with TrafficCraft's DragonLib). DragonLib is only a dev runtime dependency (`modLocalRuntime`), because TrafficCraft needs it. Keep it that way: TrafficCraft 1.1.x ships DragonLib 2.x and 1.2.x needs DragonLib 3.x, and only one can be loaded.
 
 

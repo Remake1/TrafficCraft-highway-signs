@@ -1,0 +1,21 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "###",
+        "#D#",
+        "###"
+    ],
+    "key": {
+        "#": {
+            "tag": "c:plates/iron"
+        },
+        "D": {
+            "tag": "c:dyes/green"
+        }
+    },
+    "result": {
+        "id": "tchighwaysigns:highway_sign",
+        "count": 4
+    }
+}

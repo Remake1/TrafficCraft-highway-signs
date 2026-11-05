@@ -1,8 +1,5 @@
 package dev.remake1.tchighwaysigns.client.ber;
 
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -22,7 +19,9 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Renders text and arrows of a highway sign. The panel itself (background and border) is part of the baked
@@ -31,7 +30,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<HighwaySignBlockEntity> {
 
-    public static final ResourceLocation ARROWS_TEXTURE = new ResourceLocation(HighwaySigns.MOD_ID, "textures/block/highway_sign/arrows.png");
+    public static final ResourceLocation ARROWS_TEXTURE = ResourceLocation.fromNamespaceAndPath(HighwaySigns.MOD_ID, "textures/block/highway_sign/arrows.png");
 
     /** Distance of the front face from the block center. */
     private static final float FACE_OFFSET = 0.5f - (float)HighwaySignBlock.PANEL_THICKNESS / 16.0f;
@@ -94,8 +93,7 @@ public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<Highw
     /** Draws the colored box behind the text, using the white cell of the arrow atlas (same render batch as arrows). */
     private void renderBox(PoseStack poseStack, MultiBufferSource bufferSource, LineLayout line, int packedLight) {
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(ARROWS_TEXTURE));
-        Matrix4f pose = poseStack.last().pose();
-        Matrix3f normal = poseStack.last().normal();
+        PoseStack.Pose pose = poseStack.last();
 
         int color = line.highlightColor();
         float r = ((color >> 16) & 0xFF) / 255.0f;
@@ -104,16 +102,15 @@ public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<Highw
         float u = HighwayArrow.WHITE_U;
         float v = HighwayArrow.WHITE_V;
 
-        vertex(consumer, pose, normal, line.boxX0(), -line.boxY0(), BOX_Z, u, v, r, g, b, packedLight);
-        vertex(consumer, pose, normal, line.boxX0(), -line.boxY1(), BOX_Z, u, v, r, g, b, packedLight);
-        vertex(consumer, pose, normal, line.boxX1(), -line.boxY1(), BOX_Z, u, v, r, g, b, packedLight);
-        vertex(consumer, pose, normal, line.boxX1(), -line.boxY0(), BOX_Z, u, v, r, g, b, packedLight);
+        vertex(consumer, pose, line.boxX0(), -line.boxY0(), BOX_Z, u, v, r, g, b, packedLight);
+        vertex(consumer, pose, line.boxX0(), -line.boxY1(), BOX_Z, u, v, r, g, b, packedLight);
+        vertex(consumer, pose, line.boxX1(), -line.boxY1(), BOX_Z, u, v, r, g, b, packedLight);
+        vertex(consumer, pose, line.boxX1(), -line.boxY0(), BOX_Z, u, v, r, g, b, packedLight);
     }
 
     private void renderArrow(PoseStack poseStack, MultiBufferSource bufferSource, LineLayout line, int color, int packedLight) {
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(ARROWS_TEXTURE));
-        Matrix4f pose = poseStack.last().pose();
-        Matrix3f normal = poseStack.last().normal();
+        PoseStack.Pose pose = poseStack.last();
 
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float g = ((color >> 8) & 0xFF) / 255.0f;
@@ -128,26 +125,37 @@ public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<Highw
         float v0 = line.arrow().getV0();
         float v1 = line.arrow().getV1();
 
-        vertex(consumer, pose, normal, x0, yTop, ARROW_Z, u0, v0, r, g, b, packedLight);
-        vertex(consumer, pose, normal, x0, yBottom, ARROW_Z, u0, v1, r, g, b, packedLight);
-        vertex(consumer, pose, normal, x1, yBottom, ARROW_Z, u1, v1, r, g, b, packedLight);
-        vertex(consumer, pose, normal, x1, yTop, ARROW_Z, u1, v0, r, g, b, packedLight);
+        vertex(consumer, pose, x0, yTop, ARROW_Z, u0, v0, r, g, b, packedLight);
+        vertex(consumer, pose, x0, yBottom, ARROW_Z, u0, v1, r, g, b, packedLight);
+        vertex(consumer, pose, x1, yBottom, ARROW_Z, u1, v1, r, g, b, packedLight);
+        vertex(consumer, pose, x1, yTop, ARROW_Z, u1, v0, r, g, b, packedLight);
     }
 
-    private static void vertex(VertexConsumer consumer, Matrix4f pose, Matrix3f normal, float x, float y, float z, float u, float v, float r, float g, float b, int light) {
-        consumer.vertex(pose, x, y, z)
-            .color(r, g, b, 1.0f)
-            .uv(u, v)
-            .overlayCoords(OverlayTexture.NO_OVERLAY)
-            .uv2(light)
-            .normal(normal, 0, 0, 1)
-            .endVertex();
+    private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, float r, float g, float b, int light) {
+        consumer.addVertex(pose, x, y, z)
+            .setColor(r, g, b, 1.0f)
+            .setUv(u, v)
+            .setOverlay(OverlayTexture.NO_OVERLAY)
+            .setLight(light)
+            .setNormal(pose, 0, 0, 1);
     }
 
     @Override
     public boolean shouldRenderOffScreen(HighwaySignBlockEntity blockEntity) {
         // Large signs reach into neighbouring chunk sections. Without this the content disappears when the anchor's section is culled.
         return true;
+    }
+
+    /**
+     * Used by NeoForge ({@code IBlockEntityRendererExtension#getRenderBoundingBox}) to frustum-cull the block entity renderer.
+     * Not annotated with {@code @Override}, because the method does not exist in vanilla. The parameter is
+     * {@link BlockEntity} (the erasure of the generic parameter), so that it overrides NeoForge's method at runtime.
+     */
+    public AABB getRenderBoundingBox(BlockEntity blockEntity) {
+        if (blockEntity instanceof HighwaySignBlockEntity sign) {
+            return sign.getSignBounds();
+        }
+        return new AABB(blockEntity.getBlockPos());
     }
 
     @Override

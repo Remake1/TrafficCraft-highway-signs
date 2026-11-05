@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[${forge_loader_version},)"
+loaderVersion = "[${neoforge_loader_version},)"
 issueTrackerURL = "${issues}"
 license = "${license}"
 
@@ -13,30 +13,30 @@ authors = "${authors}"
 description = '''${description}'''
 
 [[dependencies.${modid}]]
-modId = "forge"
-mandatory = true
-versionRange = "[${forge_dependency_version},)"
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge_dependency_version},)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${modid}]]
 modId = "minecraft"
-mandatory = true
+type = "required"
 versionRange = "[${minecraft_version},${next_unsupported_minecraft_version})"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${modid}]]
 modId = "architectury"
-mandatory = true
-versionRange = "[9.1.12,)"
+type = "required"
+versionRange = "[${architectury_api_version},)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.${modid}]]
 modId = "trafficcraft"
-mandatory = true
-# Two ranges because Forge sorts "beta-1.2.0" (the version inside the 1.2.0 beta jars) below "1.1.3".
-versionRange = "[1.20.1-beta-1.2.0,1.20.1-rc),[1.20.1-1.1.3,)"
+type = "required"
+# Two ranges because NeoForge sorts "beta-1.2.0" (the version inside the 1.2.0 beta jars) below "1.1.3".
+versionRange = "[${minecraft_version}-beta-1.2.0,${minecraft_version}-rc),[${minecraft_version}-1.1.3,)"
 ordering = "AFTER"
 side = "BOTH"
