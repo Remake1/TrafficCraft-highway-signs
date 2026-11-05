@@ -2,7 +2,6 @@ package dev.remake1.tchighwaysigns.block.entity;
 
 import java.util.function.ToIntFunction;
 
-import de.mrjulsen.mcdragonlib.block.DLSyncedBlockEntity;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock;
 import dev.remake1.tchighwaysigns.client.ClientWrapper;
 import dev.remake1.tchighwaysigns.data.HighwaySignData;
@@ -11,13 +10,16 @@ import dev.remake1.tchighwaysigns.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 /**
  * Stores the content of a highway sign. Only exists on the anchor cell of a sign.
  */
-public class HighwaySignBlockEntity extends DLSyncedBlockEntity {
+public class HighwaySignBlockEntity extends BlockEntity {
 
     private static final String NBT_DATA = "HighwaySign";
 
@@ -47,6 +49,24 @@ public class HighwaySignBlockEntity extends DLSyncedBlockEntity {
             layout = HighwaySignLayout.compute(data, textWidth, lineHeight);
         }
         return layout;
+    }
+
+    /** Saves the change and sends the block entity to all clients tracking the chunk. */
+    private void notifyUpdate() {
+        setChanged();
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.getChunkSource().blockChanged(getBlockPos());
+        }
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
+    }
+
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override

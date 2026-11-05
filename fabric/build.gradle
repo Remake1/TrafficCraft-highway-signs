@@ -29,7 +29,8 @@ dependencies {
     modImplementation("dev.architectury:architectury-fabric:${rootProject.architectury_api_version}")
     modCompileOnly("com.electronwill.night-config:toml:3.6.0")
     modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${rootProject.forge_config_api_port_version}")
-    modImplementation("de.mrjulsen.mcdragonlib:dragonlib-fabric:${rootProject.minecraft_version}-${rootProject.dragonlib_version}")
+    // TrafficCraft needs DragonLib at runtime. The addon does not compile against it.
+    modLocalRuntime("de.mrjulsen.mcdragonlib:dragonlib-fabric:${rootProject.minecraft_version}-${rootProject.dragonlib_version}")
     modImplementation("maven.modrinth:trafficcraft:${rootProject.trafficcraft_fabric_version}")
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }

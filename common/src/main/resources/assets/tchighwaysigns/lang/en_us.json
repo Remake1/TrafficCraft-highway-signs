@@ -45,5 +45,16 @@
     "enum.tchighwaysigns.highway_arrow.down_left": "Down left",
     "enum.tchighwaysigns.highway_arrow.down_right": "Down right",
     "enum.tchighwaysigns.highway_arrow.exit_left": "Exit left",
-    "enum.tchighwaysigns.highway_arrow.exit_right": "Exit right"
+    "enum.tchighwaysigns.highway_arrow.exit_right": "Exit right",
+    "gui.tchighwaysigns.color_picker.title": "Color Picker",
+    "gui.tchighwaysigns.color_picker.red": "R",
+    "gui.tchighwaysigns.color_picker.green": "G",
+    "gui.tchighwaysigns.color_picker.blue": "B",
+    "gui.tchighwaysigns.color_picker.hex": "Hex",
+    "gui.tchighwaysigns.color_picker.new": "New",
+    "gui.tchighwaysigns.color_picker.old": "Old (click to restore)",
+    "enum.tchighwaysigns.text_alignment": "Alignment",
+    "enum.tchighwaysigns.text_alignment.left": "Left",
+    "enum.tchighwaysigns.text_alignment.center": "Center",
+    "enum.tchighwaysigns.text_alignment.right": "Right"
 }

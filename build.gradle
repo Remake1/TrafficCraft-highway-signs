@@ -67,7 +67,6 @@ subprojects {
             "authors": rootProject.authors,
             "description": rootProject.description,
             "next_unsupported_minecraft_version": rootProject.next_unsupported_minecraft_version,
-            "dragonlib_version": "$rootProject.minecraft_version-$rootProject.dragonlib_version",
             "trafficcraft_version": rootProject.trafficcraft_version,
             "forge_loader_version": rootProject.forge_loader_version,
             "forge_dependency_version": rootProject.forge_dependency_version,

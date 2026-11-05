@@ -1,6 +1,5 @@
 package dev.remake1.tchighwaysigns.data;
 
-import de.mrjulsen.mcdragonlib.data.ETextAlignment;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 
@@ -45,7 +44,7 @@ public class HighwaySignLine {
 
     private String text;
     private float scale;
-    private ETextAlignment alignment;
+    private TextAlignment alignment;
     private HighwayArrow arrow;
     private ArrowSide arrowSide;
     /** Text color of this line or {@link #NO_COLOR} to use the text color of the sign. */
@@ -56,16 +55,16 @@ public class HighwaySignLine {
     /** Valid colors are always opaque, so 0 can be used as "not set". */
     public static final int NO_COLOR = 0;
 
-    public HighwaySignLine(String text, float scale, ETextAlignment alignment, HighwayArrow arrow, ArrowSide arrowSide) {
+    public HighwaySignLine(String text, float scale, TextAlignment alignment, HighwayArrow arrow, ArrowSide arrowSide) {
         this.text = text == null ? "" : text;
         this.scale = scale;
-        this.alignment = alignment == null ? ETextAlignment.CENTER : alignment;
+        this.alignment = alignment == null ? TextAlignment.CENTER : alignment;
         this.arrow = arrow == null ? HighwayArrow.NONE : arrow;
         this.arrowSide = arrowSide == null ? ArrowSide.LEFT : arrowSide;
     }
 
     public HighwaySignLine() {
-        this("", 1.0f, ETextAlignment.CENTER, HighwayArrow.NONE, ArrowSide.LEFT);
+        this("", 1.0f, TextAlignment.CENTER, HighwayArrow.NONE, ArrowSide.LEFT);
     }
 
     public HighwaySignLine copy() {
@@ -91,11 +90,11 @@ public class HighwaySignLine {
         this.scale = scale;
     }
 
-    public ETextAlignment getAlignment() {
+    public TextAlignment getAlignment() {
         return alignment;
     }
 
-    public void setAlignment(ETextAlignment alignment) {
+    public void setAlignment(TextAlignment alignment) {
         this.alignment = alignment;
     }
 
@@ -179,7 +178,7 @@ public class HighwaySignLine {
         HighwaySignLine line = new HighwaySignLine(
             nbt.getString(NBT_TEXT),
             nbt.contains(NBT_SCALE) ? nbt.getFloat(NBT_SCALE) : 1.0f,
-            ETextAlignment.getById(nbt.getByte(NBT_ALIGN)),
+            TextAlignment.getById(nbt.getByte(NBT_ALIGN)),
             HighwayArrow.getById(nbt.getByte(NBT_ARROW)),
             nbt.contains(NBT_ARROW_SIDE) ? ArrowSide.getByIndex(nbt.getByte(NBT_ARROW_SIDE)) : (nbt.getBoolean(NBT_ARROW_RIGHT) ? ArrowSide.RIGHT : ArrowSide.LEFT)
         );

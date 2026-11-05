@@ -2,8 +2,10 @@ package dev.remake1.tchighwaysigns.client;
 
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock;
 import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
+import dev.remake1.tchighwaysigns.client.screen.ColorPickerScreen;
 import dev.remake1.tchighwaysigns.client.screen.HighwaySignEditorScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -18,7 +20,12 @@ public class ClientWrapper {
     /** Called when the server answered an update request of the highway sign editor. May be called from any thread. */
     public static void handleHighwaySignResult(BlockPos anchor, HighwaySignBlock.ResizeResult result) {
         Minecraft.getInstance().execute(() -> {
-            if (Minecraft.getInstance().screen instanceof HighwaySignEditorScreen screen && screen.getAnchor().equals(anchor)) {
+            Screen current = Minecraft.getInstance().screen;
+            // The editor may be waiting behind an open color picker.
+            if (current instanceof ColorPickerScreen picker) {
+                current = picker.getParent();
+            }
+            if (current instanceof HighwaySignEditorScreen screen && screen.getAnchor().equals(anchor)) {
                 screen.onServerResult(result);
             }
         });

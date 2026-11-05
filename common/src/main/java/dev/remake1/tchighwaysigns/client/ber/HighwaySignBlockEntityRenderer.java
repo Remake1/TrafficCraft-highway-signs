@@ -7,7 +7,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 
-import de.mrjulsen.mcdragonlib.util.DLUtils;
 import dev.remake1.tchighwaysigns.HighwaySigns;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock;
 import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
@@ -32,7 +31,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<HighwaySignBlockEntity> {
 
-    public static final ResourceLocation ARROWS_TEXTURE = DLUtils.resourceLocation(HighwaySigns.MOD_ID, "textures/block/highway_sign/arrows.png");
+    public static final ResourceLocation ARROWS_TEXTURE = new ResourceLocation(HighwaySigns.MOD_ID, "textures/block/highway_sign/arrows.png");
 
     /** Distance of the front face from the block center. */
     private static final float FACE_OFFSET = 0.5f - (float)HighwaySignBlock.PANEL_THICKNESS / 16.0f;

@@ -45,5 +45,16 @@
     "enum.tchighwaysigns.highway_arrow.down_left": "Unten links",
     "enum.tchighwaysigns.highway_arrow.down_right": "Unten rechts",
     "enum.tchighwaysigns.highway_arrow.exit_left": "Ausfahrt links",
-    "enum.tchighwaysigns.highway_arrow.exit_right": "Ausfahrt rechts"
+    "enum.tchighwaysigns.highway_arrow.exit_right": "Ausfahrt rechts",
+    "gui.tchighwaysigns.color_picker.title": "Farbauswahl",
+    "gui.tchighwaysigns.color_picker.red": "R",
+    "gui.tchighwaysigns.color_picker.green": "G",
+    "gui.tchighwaysigns.color_picker.blue": "B",
+    "gui.tchighwaysigns.color_picker.hex": "Hex",
+    "gui.tchighwaysigns.color_picker.new": "Neu",
+    "gui.tchighwaysigns.color_picker.old": "Alt (Klicken zum Wiederherstellen)",
+    "enum.tchighwaysigns.text_alignment": "Ausrichtung",
+    "enum.tchighwaysigns.text_alignment.left": "Links",
+    "enum.tchighwaysigns.text_alignment.center": "Zentriert",
+    "enum.tchighwaysigns.text_alignment.right": "Rechts"
 }

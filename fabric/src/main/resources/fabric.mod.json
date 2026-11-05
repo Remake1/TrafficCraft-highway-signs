@@ -24,9 +24,8 @@
     "minecraft": "~${minecraft_version}",
     "java": ">=${java_version}",
     "fabric-api": "*",
-    "architectury": "*",
+    "architectury": ">=9.1.12",
     "forgeconfigapiport": "*",
-    "dragonlib": ">=${dragonlib_version}",
-    "trafficcraft": ">=1.20.1-beta-1.2.0"
+    "trafficcraft": ">=1.20.1-1.1.3"
   }
 }

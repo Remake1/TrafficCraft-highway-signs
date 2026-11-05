@@ -6,11 +6,6 @@ import java.util.function.IntConsumer;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import de.mrjulsen.mcdragonlib.client.gui.builtin.DLColorPickerWindow;
-import de.mrjulsen.mcdragonlib.client.gui.widgets.base.DLWindow;
-import de.mrjulsen.mcdragonlib.data.ETextAlignment;
-import de.mrjulsen.mcdragonlib.network.NetworkDirection;
-import de.mrjulsen.mcdragonlib.util.DLColor;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock.ResizeResult;
 import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
 import dev.remake1.tchighwaysigns.client.HighwaySignClipboard;
@@ -22,6 +17,7 @@ import dev.remake1.tchighwaysigns.data.HighwaySignLayout;
 import dev.remake1.tchighwaysigns.data.HighwaySignLayout.LineLayout;
 import dev.remake1.tchighwaysigns.data.HighwaySignLine;
 import dev.remake1.tchighwaysigns.data.HighwaySignLine.ArrowSide;
+import dev.remake1.tchighwaysigns.data.TextAlignment;
 import dev.remake1.tchighwaysigns.network.packets.cts.HighwaySignPacket;
 import dev.remake1.tchighwaysigns.registry.ModNetworkManager;
 import net.minecraft.client.gui.GuiGraphics;
@@ -177,7 +173,7 @@ public class HighwaySignEditorScreen extends Screen {
             if ((current | 0xFF000000) == color) custom = false;
         }
         Button customButton = addRenderableWidget(Button.builder(Component.literal("..."), b -> {
-            DLWindow.openWindow(mgr -> new DLColorPickerWindow(mgr, false, DLColor.fromInt(current), picked -> setter.accept(picked.getAsARGB())));
+            openColorPicker(current, setter);
         }).bounds(x, y, SWATCH_SIZE + 12, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + "custom_color", String.format("#%06X", current & 0xFFFFFF)))).build());
         if (custom) {
             swatches.add(new Swatch(x + SWATCH_SIZE + 14, y, current, true));
@@ -196,7 +192,7 @@ public class HighwaySignEditorScreen extends Screen {
         x += 92;
 
         addRenderableWidget(Button.builder(Component.literal(alignmentSymbol(line.getAlignment())), b -> {
-            line.setAlignment(ETextAlignment.values()[(line.getAlignment().ordinal() + 1) % ETextAlignment.values().length]);
+            line.setAlignment(line.getAlignment().next());
             requestRebuild();
         }).bounds(x, y, 20, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + "line.alignment", line.getAlignment().getValueTranslation()))).build());
         x += 22;
@@ -259,10 +255,17 @@ public class HighwaySignEditorScreen extends Screen {
                 requestRebuild();
                 return;
             }
-            DLWindow.openWindow(mgr -> new DLColorPickerWindow(mgr, false, DLColor.fromInt(isSet ? current : initial), picked -> setter.accept(picked.getAsARGB())));
+            openColorPicker(isSet ? current : initial, setter);
         }).bounds(x, y, SWATCH_SIZE, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + tooltipKey, colorName))).build());
         if (isSet) {
             swatches.add(new Swatch(x, y, current, false));
+        }
+    }
+
+    /** Opens the color picker on top of this screen. The editor is shown again (and rebuilt) when the picker closes. */
+    private void openColorPicker(int initialColor, IntConsumer setter) {
+        if (minecraft != null) {
+            minecraft.setScreen(new ColorPickerScreen(this, initialColor, setter));
         }
     }
 
@@ -277,7 +280,7 @@ public class HighwaySignEditorScreen extends Screen {
         return SCALES[Math.floorMod(index + direction, SCALES.length)];
     }
 
-    private static String alignmentSymbol(ETextAlignment alignment) {
+    private static String alignmentSymbol(TextAlignment alignment) {
         return switch (alignment) {
             case LEFT -> "⇤";
             case RIGHT -> "⇥";
@@ -341,7 +344,7 @@ public class HighwaySignEditorScreen extends Screen {
         waitingForServer = true;
         waitTicks = 0;
         setStatus(Component.translatable(KEY + "saving"), false);
-        ModNetworkManager.UPDATE_HIGHWAY_SIGN.send(NetworkDirection.toServer(), new HighwaySignPacket(anchor, data.copy()));
+        ModNetworkManager.CHANNEL.sendToServer(new HighwaySignPacket(anchor, data.copy()));
     }
 
     public BlockPos getAnchor() {

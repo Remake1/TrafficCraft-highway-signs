@@ -2,15 +2,13 @@ package dev.remake1.tchighwaysigns.data;
 
 import java.util.Arrays;
 
-import de.mrjulsen.mcdragonlib.data.ITranslatableEnum;
-import dev.remake1.tchighwaysigns.HighwaySigns;
 
 /**
  * Direction arrows that can be shown next to a line of a highway sign.
  * Each arrow (except {@link #NONE}) references one cell of the arrow atlas
  * {@code textures/block/highway_sign/arrows.png} ({@value #ATLAS_COLUMNS} x {@value #ATLAS_ROWS} cells).
  */
-public enum HighwayArrow implements ITranslatableEnum {
+public enum HighwayArrow implements TranslatableEnum {
     NONE(0, "none", -1),
     UP(1, "up", 0),
     UP_LEFT(2, "up_left", 1),
@@ -45,6 +43,7 @@ public enum HighwayArrow implements ITranslatableEnum {
         return id;
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -80,7 +79,7 @@ public enum HighwayArrow implements ITranslatableEnum {
     }
 
     @Override
-    public Data getTranslationData() {
-        return new Data(HighwaySigns.MOD_ID, "highway_arrow", name);
+    public String getTranslationGroup() {
+        return "highway_arrow";
     }
 }

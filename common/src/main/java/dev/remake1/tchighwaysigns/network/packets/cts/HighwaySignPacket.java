@@ -1,10 +1,8 @@
 package dev.remake1.tchighwaysigns.network.packets.cts;
 
-import de.mrjulsen.mcdragonlib.data.DLStatus;
-import de.mrjulsen.mcdragonlib.network.NetworkDirection;
-import de.mrjulsen.mcdragonlib.network.NetworkPacketContext;
-import de.mrjulsen.mcdragonlib.network.NetworkPacketData;
-import de.mrjulsen.mcdragonlib.util.NbtUtils;
+import java.util.function.Supplier;
+
+import dev.architectury.networking.NetworkManager.PacketContext;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock;
 import dev.remake1.tchighwaysigns.block.HighwaySignBlock.ResizeResult;
 import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
@@ -13,6 +11,7 @@ import dev.remake1.tchighwaysigns.network.packets.stc.HighwaySignResultPacket;
 import dev.remake1.tchighwaysigns.registry.ModNetworkManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,41 +26,32 @@ import net.minecraft.world.phys.Vec3;
  * blocking the network handler while waiting for the server thread can stall the server (and time out).
  * </p>
  */
-public class HighwaySignPacket extends NetworkPacketData {
+public class HighwaySignPacket {
 
     /** Max distance between the player and the sign anchor. */
     private static final double MAX_DISTANCE = 12.0D;
 
-    private static final String NBT_POS = "Pos";
-    private static final String NBT_DATA = "Data";
-
-    private BlockPos pos;
-    private HighwaySignData data;
-
-    public HighwaySignPacket(DLStatus status) {
-        super(status);
-    }
+    private final BlockPos pos;
+    private final HighwaySignData data;
 
     public HighwaySignPacket(BlockPos anchor, HighwaySignData data) {
-        super(DLStatus.OK);
         this.pos = anchor;
         this.data = data;
     }
 
-    @Override
-    protected void write(CompoundTag nbt) {
-        NbtUtils.putNbtPos(nbt, NBT_POS, pos);
-        nbt.put(NBT_DATA, data.toNbt());
+    public void encode(FriendlyByteBuf buf) {
+        buf.writeBlockPos(pos);
+        buf.writeNbt(data.toNbt());
     }
 
-    @Override
-    protected void read(CompoundTag nbt) {
-        this.pos = NbtUtils.getNbtBlockPos(nbt, NBT_POS);
-        this.data = HighwaySignData.fromNbt(nbt.getCompound(NBT_DATA));
+    public static HighwaySignPacket decode(FriendlyByteBuf buf) {
+        BlockPos pos = buf.readBlockPos();
+        CompoundTag nbt = buf.readNbt();
+        return new HighwaySignPacket(pos, nbt == null ? null : HighwaySignData.fromNbt(nbt));
     }
 
-    public static void handle(HighwaySignPacket packet, NetworkPacketContext context) {
-        if (!(context.getPlayer() instanceof ServerPlayer sender) || packet.pos == null || packet.data == null) {
+    public static void handle(HighwaySignPacket packet, Supplier<PacketContext> context) {
+        if (!(context.get().getPlayer() instanceof ServerPlayer sender) || packet.pos == null || packet.data == null) {
             return;
         }
         MinecraftServer server = sender.getServer();
@@ -72,7 +62,7 @@ public class HighwaySignPacket extends NetworkPacketData {
         // Runs on the server thread (immediately, if we are already on it). Never blocks the calling thread.
         server.execute(() -> {
             ResizeResult result = apply(sender, packet.pos, packet.data);
-            ModNetworkManager.HIGHWAY_SIGN_RESULT.send(NetworkDirection.toPlayer(sender), new HighwaySignResultPacket(packet.pos, result));
+            ModNetworkManager.CHANNEL.sendToPlayer(sender, new HighwaySignResultPacket(packet.pos, result));
         });
     }
 
