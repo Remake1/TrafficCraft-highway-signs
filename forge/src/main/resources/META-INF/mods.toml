@@ -8,6 +8,7 @@ modId = "${modid}"
 version = "${version}"
 displayName = "${display_name}"
 displayURL = "${homepage}"
+logoFile = "assets/tchighwaysigns/icon.png"
 authors = "${authors}"
 description = '''${description}'''
 

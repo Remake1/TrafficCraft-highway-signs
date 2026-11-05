@@ -13,6 +13,7 @@
     "sources": "${source}"
   },
   "license": "${license}",
+  "icon": "assets/tchighwaysigns/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
