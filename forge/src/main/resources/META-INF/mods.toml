@@ -36,6 +36,7 @@ side = "BOTH"
 [[dependencies.${modid}]]
 modId = "trafficcraft"
 mandatory = true
-versionRange = "[1.20.1-1.1.3,)"
+# Two ranges because Forge sorts "beta-1.2.0" (the version inside the 1.2.0 beta jars) below "1.1.3".
+versionRange = "[1.20.1-beta-1.2.0,1.20.1-rc),[1.20.1-1.1.3,)"
 ordering = "AFTER"
 side = "BOTH"

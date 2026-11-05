@@ -37,7 +37,6 @@ Use **JDK 17** for the game.
 
 TrafficCraft comes from the Modrinth maven by version ID. To update it:
 1. Change `trafficcraft_fabric_version` and `trafficcraft_forge_version` in `gradle.properties`. The IDs are listed at `https://api.modrinth.com/v2/project/trafficcraft/version`.
-2. If the new release requires it, also raise the `trafficcraft` version ranges in `fabric.mod.json` and `mods.toml`.
 
 The addon does not use DragonLib's API, only Architectury (compiled against `9.1.12`, the version bundled with TrafficCraft's DragonLib). DragonLib is only a dev runtime dependency (`modLocalRuntime`), because TrafficCraft needs it. Keep it that way: TrafficCraft 1.1.x ships DragonLib 2.x and 1.2.x needs DragonLib 3.x, and only one can be loaded.
 
