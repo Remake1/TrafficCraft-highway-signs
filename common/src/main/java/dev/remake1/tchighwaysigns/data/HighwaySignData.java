@@ -14,9 +14,9 @@ import net.minecraft.util.Mth;
 public class HighwaySignData {
 
     public static final int MIN_WIDTH = 1;
-    public static final int MAX_WIDTH = 5;
+    public static final int MAX_WIDTH = 8;
     public static final int MIN_HEIGHT = 1;
-    public static final int MAX_HEIGHT = 3;
+    public static final int MAX_HEIGHT = 4;
     public static final int LINES_PER_BLOCK = 3;
     public static final int MAX_LANES = MAX_WIDTH;
     public static final float DEFAULT_LANE_SCALE = 1.5f;

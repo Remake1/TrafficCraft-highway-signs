@@ -2,7 +2,7 @@
 
 An addon for [TrafficCraft](https://modrinth.com/mod/trafficcraft).
 
-This addon adds customizable highway signs to TrafficCraft mod. Add custom text in different sizes, change colors and backgrounds, add arrows and more. From 1x1 to 4x3 blocks size. 
+This addon adds customizable highway signs to TrafficCraft mod. Add custom text in different sizes, change colors and backgrounds, add arrows and more. From 1x1 to 8x4 blocks size. 
 
 - Requires: TrafficCraft `1.20.1-1.1.3` or newer (including `1.2.0` betas). Architectury API, DragonLib and Forge Config API Port come with TrafficCraft, so they don't need to be installed separately. Fabric also needs Fabric API.
 
@@ -18,7 +18,7 @@ This addon adds customizable highway signs to TrafficCraft mod. Add custom text 
     - on a vertical post, any side works;
     - on a horizontal post (gantry), only the two sides across it.
 3. Right-click the sign with a **wrench** to open the editor. In the editor you can set:
-    - size, from 1×1 to 4×3 blocks (width × height);
+    - size, from 1×1 to 8×4 blocks (width × height);
     - colors and lines: 3 lines per block of height, 48 characters per line;
     - per-line arrows, alignment, text size and colors;
     - copy/paste of a whole sign.

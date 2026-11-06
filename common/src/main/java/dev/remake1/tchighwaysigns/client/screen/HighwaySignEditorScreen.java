@@ -165,15 +165,18 @@ public class HighwaySignEditorScreen extends Screen {
         labels.add(new Label(Component.translatable(KEY + "lanes"), left, y + 5));
         addSizePicker(left + LABEL_WIDTH, y, "#", lanes.size(), 0, HighwaySignData.MAX_LANES, this::resizeLanes);
 
+        // Lane buttons share the space between the count picker and the scale button.
         int x = left + LABEL_WIDTH + 70;
+        final int available = left + CONTENT_WIDTH - 36 - 2 - x;
+        final int step = lanes.isEmpty() ? 24 : Math.min(24, available / lanes.size());
         for (int i = 0; i < lanes.size(); i++) {
             final int index = i;
             final HighwayArrow arrow = lanes.get(i);
             addRenderableWidget(Button.builder(Component.literal(arrowSymbol(arrow)), b -> {
                 lanes.set(index, cycleArrow(arrow));
                 requestRebuild();
-            }).bounds(x, y, 22, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + "lanes.arrow", index + 1, arrow.getValueTranslation()))).build());
-            x += 24;
+            }).bounds(x, y, step - 2, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + "lanes.arrow", index + 1, arrow.getValueTranslation()))).build());
+            x += step;
         }
 
         Button scale = addRenderableWidget(Button.builder(Component.literal(String.format("%.2fx", data.getLaneArrowScale())), b -> {
