@@ -13,6 +13,7 @@ import dev.remake1.tchighwaysigns.block.entity.HighwaySignBlockEntity;
 import dev.remake1.tchighwaysigns.config.ModClientConfig;
 import dev.remake1.tchighwaysigns.data.HighwayArrow;
 import dev.remake1.tchighwaysigns.data.HighwaySignLayout;
+import dev.remake1.tchighwaysigns.data.HighwaySignLayout.ArrowLayout;
 import dev.remake1.tchighwaysigns.data.HighwaySignLayout.LineLayout;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -84,14 +85,18 @@ public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<Highw
             }
 
             if (line.hasArrow()) {
-                renderArrow(poseStack, bufferSource, line, signTextColor, packedLight);
+                renderArrow(poseStack, bufferSource, line.arrow(), line.arrowX(), line.arrowY(), line.arrowSize(), signTextColor, packedLight);
             }
+        }
+
+        for (ArrowLayout lane : layout.getLaneArrows()) {
+            renderArrow(poseStack, bufferSource, lane.arrow(), lane.x(), lane.y(), lane.size(), signTextColor, packedLight);
         }
 
         poseStack.popPose();
     }
 
-    /** Draws the colored box behind the text, using the white cell of the arrow atlas (same render batch as arrows). */
+    /** Draws the colored box behind the text, using the white cell of the arrow atlas. Shaded like the sign panel. */
     private void renderBox(PoseStack poseStack, MultiBufferSource bufferSource, LineLayout line, int packedLight) {
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(ARROWS_TEXTURE));
         Matrix4f pose = poseStack.last().pose();
@@ -110,28 +115,41 @@ public class HighwaySignBlockEntityRenderer implements BlockEntityRenderer<Highw
         vertex(consumer, pose, normal, line.boxX1(), -line.boxY0(), BOX_Z, u, v, r, g, b, packedLight);
     }
 
-    private void renderArrow(PoseStack poseStack, MultiBufferSource bufferSource, LineLayout line, int color, int packedLight) {
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(ARROWS_TEXTURE));
+    /**
+     * Draws an arrow with its top left corner at ({@code x}, {@code y}) in layout coordinates.
+     * Uses the same render type as the text ({@link Font.DisplayMode#POLYGON_OFFSET}), so arrows are lit exactly
+     * like the text: only by the lightmap, without the directional shading that darkens entity render types.
+     */
+    private void renderArrow(PoseStack poseStack, MultiBufferSource bufferSource, HighwayArrow arrow, float x, float y, float size, int color, int packedLight) {
+        VertexConsumer consumer = bufferSource.getBuffer(RenderType.textPolygonOffset(ARROWS_TEXTURE));
         Matrix4f pose = poseStack.last().pose();
-        Matrix3f normal = poseStack.last().normal();
 
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float g = ((color >> 8) & 0xFF) / 255.0f;
         float b = (color & 0xFF) / 255.0f;
 
-        float x0 = line.arrowX();
-        float x1 = line.arrowX() + line.arrowSize();
-        float yTop = -line.arrowY();
-        float yBottom = -(line.arrowY() + line.arrowSize());
-        float u0 = line.arrow().getU0();
-        float u1 = line.arrow().getU1();
-        float v0 = line.arrow().getV0();
-        float v1 = line.arrow().getV1();
+        float x0 = x;
+        float x1 = x + size;
+        float yTop = -y;
+        float yBottom = -(y + size);
+        float u0 = arrow.getU0();
+        float u1 = arrow.getU1();
+        float v0 = arrow.getV0();
+        float v1 = arrow.getV1();
 
-        vertex(consumer, pose, normal, x0, yTop, ARROW_Z, u0, v0, r, g, b, packedLight);
-        vertex(consumer, pose, normal, x0, yBottom, ARROW_Z, u0, v1, r, g, b, packedLight);
-        vertex(consumer, pose, normal, x1, yBottom, ARROW_Z, u1, v1, r, g, b, packedLight);
-        vertex(consumer, pose, normal, x1, yTop, ARROW_Z, u1, v0, r, g, b, packedLight);
+        textVertex(consumer, pose, x0, yTop, ARROW_Z, u0, v0, r, g, b, packedLight);
+        textVertex(consumer, pose, x0, yBottom, ARROW_Z, u0, v1, r, g, b, packedLight);
+        textVertex(consumer, pose, x1, yBottom, ARROW_Z, u1, v1, r, g, b, packedLight);
+        textVertex(consumer, pose, x1, yTop, ARROW_Z, u1, v0, r, g, b, packedLight);
+    }
+
+    /** Vertex for text render types (format POSITION_COLOR_TEX_LIGHTMAP: no overlay, no normal). */
+    private static void textVertex(VertexConsumer consumer, Matrix4f pose, float x, float y, float z, float u, float v, float r, float g, float b, int light) {
+        consumer.vertex(pose, x, y, z)
+            .color(r, g, b, 1.0f)
+            .uv(u, v)
+            .uv2(light)
+            .endVertex();
     }
 
     private static void vertex(VertexConsumer consumer, Matrix4f pose, Matrix3f normal, float x, float y, float z, float u, float v, float r, float g, float b, int light) {

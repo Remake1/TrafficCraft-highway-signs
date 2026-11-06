@@ -14,6 +14,7 @@ import dev.remake1.tchighwaysigns.data.HighwayArrow;
 import dev.remake1.tchighwaysigns.data.HighwaySignColorPresets;
 import dev.remake1.tchighwaysigns.data.HighwaySignData;
 import dev.remake1.tchighwaysigns.data.HighwaySignLayout;
+import dev.remake1.tchighwaysigns.data.HighwaySignLayout.ArrowLayout;
 import dev.remake1.tchighwaysigns.data.HighwaySignLayout.LineLayout;
 import dev.remake1.tchighwaysigns.data.HighwaySignLine;
 import dev.remake1.tchighwaysigns.data.HighwaySignLine.ArrowSide;
@@ -84,7 +85,7 @@ public class HighwaySignEditorScreen extends Screen {
     }
 
     private int linesTop() {
-        return PREVIEW_TOP + PREVIEW_HEIGHT + 4 + ROW_HEIGHT * 3 + 2;
+        return PREVIEW_TOP + PREVIEW_HEIGHT + 4 + ROW_HEIGHT * 4 + 2;
     }
 
     private void requestRebuild() {
@@ -113,6 +114,10 @@ public class HighwaySignEditorScreen extends Screen {
         addColorRow(left, y, Component.translatable(KEY + "background"), data.getBackgroundColor(), data::setBackgroundColor);
         y += ROW_HEIGHT;
         addColorRow(left, y, Component.translatable(KEY + "text_color"), data.getTextColor(), data::setTextColor);
+        y += ROW_HEIGHT;
+
+        // --- Row 4: lane arrows ---
+        addLaneRow(left, y);
 
         // --- Lines ---
         final int linesTop = linesTop();
@@ -153,6 +158,48 @@ public class HighwaySignEditorScreen extends Screen {
             requestRebuild();
         }).bounds(x + 48, y, 18, WIDGET_HEIGHT).build());
         plus.active = value < max;
+    }
+
+    private void addLaneRow(int left, int y) {
+        final List<HighwayArrow> lanes = data.getLaneArrows();
+        labels.add(new Label(Component.translatable(KEY + "lanes"), left, y + 5));
+        addSizePicker(left + LABEL_WIDTH, y, "#", lanes.size(), 0, HighwaySignData.MAX_LANES, this::resizeLanes);
+
+        int x = left + LABEL_WIDTH + 70;
+        for (int i = 0; i < lanes.size(); i++) {
+            final int index = i;
+            final HighwayArrow arrow = lanes.get(i);
+            addRenderableWidget(Button.builder(Component.literal(arrowSymbol(arrow)), b -> {
+                lanes.set(index, cycleArrow(arrow));
+                requestRebuild();
+            }).bounds(x, y, 22, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + "lanes.arrow", index + 1, arrow.getValueTranslation()))).build());
+            x += 24;
+        }
+
+        Button scale = addRenderableWidget(Button.builder(Component.literal(String.format("%.2fx", data.getLaneArrowScale())), b -> {
+            data.setLaneArrowScale(nextScale(data.getLaneArrowScale(), hasShiftDown() ? -1 : 1));
+            requestRebuild();
+        }).bounds(left + CONTENT_WIDTH - 36, y, 36, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + "lanes.scale"))).build());
+        scale.active = !lanes.isEmpty();
+    }
+
+    /** Adds lanes (copying the arrow of the last lane) or removes lanes from the right. */
+    private void resizeLanes(int count) {
+        final List<HighwayArrow> lanes = data.getLaneArrows();
+        count = Math.max(0, Math.min(HighwaySignData.MAX_LANES, count));
+        while (lanes.size() < count) {
+            lanes.add(lanes.isEmpty() ? HighwayArrow.DOWN : lanes.get(lanes.size() - 1));
+        }
+        while (lanes.size() > count) {
+            lanes.remove(lanes.size() - 1);
+        }
+    }
+
+    /** @return The next arrow, or the previous one while shift is held. */
+    private static HighwayArrow cycleArrow(HighwayArrow current) {
+        HighwayArrow[] values = HighwayArrow.values();
+        int step = hasShiftDown() ? values.length - 1 : 1;
+        return values[(current.ordinal() + step) % values.length];
     }
 
     private void addColorRow(int left, int y, Component label, int current, IntConsumer setter) {
@@ -209,9 +256,7 @@ public class HighwaySignEditorScreen extends Screen {
         x += SWATCH_SIZE + 2;
 
         addRenderableWidget(Button.builder(Component.literal(arrowSymbol(line.getArrow())), b -> {
-            HighwayArrow[] values = HighwayArrow.values();
-            int step = hasShiftDown() ? values.length - 1 : 1;
-            line.setArrow(values[(line.getArrow().ordinal() + step) % values.length]);
+            line.setArrow(cycleArrow(line.getArrow()));
             requestRebuild();
         }).bounds(x, y, 30, WIDGET_HEIGHT).tooltip(Tooltip.create(Component.translatable(KEY + "line.arrow", line.getArrow().getValueTranslation()))).build());
         x += 32;
@@ -459,20 +504,35 @@ public class HighwaySignEditorScreen extends Screen {
             }
 
             if (line.hasArrow()) {
-                final int cell = 32;
-                final int atlasWidth = cell * HighwayArrow.ATLAS_COLUMNS;
-                final int atlasHeight = cell * HighwayArrow.ATLAS_ROWS;
-                graphics.pose().pushPose();
-                graphics.pose().translate(x + line.arrowX() * pixelsPerBlock, y + line.arrowY() * pixelsPerBlock, 0);
-                float s = line.arrowSize() * pixelsPerBlock / cell;
-                graphics.pose().scale(s, s, 1);
-                RenderSystem.enableBlend();
-                RenderSystem.setShaderColor(((textColor >> 16) & 0xFF) / 255.0f, ((textColor >> 8) & 0xFF) / 255.0f, (textColor & 0xFF) / 255.0f, 1.0f);
-                graphics.blit(HighwaySignBlockEntityRenderer.ARROWS_TEXTURE, 0, 0, cell, cell, line.arrow().getU0() * atlasWidth, line.arrow().getV0() * atlasHeight, cell, cell, atlasWidth, atlasHeight);
-                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-                RenderSystem.disableBlend();
-                graphics.pose().popPose();
+                drawArrow(graphics, x, y, pixelsPerBlock, line.arrow(), line.arrowX(), line.arrowY(), line.arrowSize(), textColor);
             }
         }
+
+        for (ArrowLayout lane : layout.getLaneArrows()) {
+            drawArrow(graphics, x, y, pixelsPerBlock, lane.arrow(), lane.x(), lane.y(), lane.size(), textColor);
+        }
+    }
+
+    /**
+     * Draws an arrow of the preview.
+     * @param x Left edge of the preview on screen.
+     * @param y Top edge of the preview on screen.
+     * @param ax Left edge of the arrow in layout (block) coordinates.
+     * @param ay Top edge of the arrow in layout (block) coordinates.
+     */
+    private static void drawArrow(GuiGraphics graphics, int x, int y, float pixelsPerBlock, HighwayArrow arrow, float ax, float ay, float size, int color) {
+        final int cell = 32;
+        final int atlasWidth = cell * HighwayArrow.ATLAS_COLUMNS;
+        final int atlasHeight = cell * HighwayArrow.ATLAS_ROWS;
+        graphics.pose().pushPose();
+        graphics.pose().translate(x + ax * pixelsPerBlock, y + ay * pixelsPerBlock, 0);
+        float s = size * pixelsPerBlock / cell;
+        graphics.pose().scale(s, s, 1);
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(((color >> 16) & 0xFF) / 255.0f, ((color >> 8) & 0xFF) / 255.0f, (color & 0xFF) / 255.0f, 1.0f);
+        graphics.blit(HighwaySignBlockEntityRenderer.ARROWS_TEXTURE, 0, 0, cell, cell, arrow.getU0() * atlasWidth, arrow.getV0() * atlasHeight, cell, cell, atlasWidth, atlasHeight);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+        graphics.pose().popPose();
     }
 }
