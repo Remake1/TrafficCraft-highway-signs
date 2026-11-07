@@ -67,16 +67,24 @@ public final class HighwaySignLayout {
         }
     }
 
-    public static final HighwaySignLayout EMPTY = new HighwaySignLayout(1, 1, List.of());
+    /** An arrow of the lane row. {@code x}/{@code y} are the top left corner, {@code size} is width and height. */
+    public static record ArrowLayout(HighwayArrow arrow, float x, float y, float size) {}
+
+    /** Maximum size of a lane arrow relative to the width of its lane. */
+    public static final float LANE_ARROW_MAX_FILL = 0.8f;
+
+    public static final HighwaySignLayout EMPTY = new HighwaySignLayout(1, 1, List.of(), List.of());
 
     private final float width;
     private final float height;
     private final List<LineLayout> lines;
+    private final List<ArrowLayout> laneArrows;
 
-    private HighwaySignLayout(float width, float height, List<LineLayout> lines) {
+    private HighwaySignLayout(float width, float height, List<LineLayout> lines, List<ArrowLayout> laneArrows) {
         this.width = width;
         this.height = height;
         this.lines = Collections.unmodifiableList(lines);
+        this.laneArrows = Collections.unmodifiableList(laneArrows);
     }
 
     public float getWidth() {
@@ -91,8 +99,13 @@ public final class HighwaySignLayout {
         return lines;
     }
 
+    /** @return The visible arrows of the lane row at the bottom of the sign. */
+    public List<ArrowLayout> getLaneArrows() {
+        return laneArrows;
+    }
+
     public boolean isEmpty() {
-        return lines.stream().noneMatch(x -> x.hasText() || x.hasArrow());
+        return laneArrows.isEmpty() && lines.stream().noneMatch(x -> x.hasText() || x.hasArrow());
     }
 
     /**
@@ -104,11 +117,34 @@ public final class HighwaySignLayout {
         final float w = data.getWidth();
         final float h = data.getHeight();
         final List<HighwaySignLine> source = data.getLines();
-        if (source.isEmpty()) {
-            return new HighwaySignLayout(w, h, List.of());
+        final float signHeight = h - 2 * PADDING;
+
+        // Lane row: reserves its height at the bottom first, the lines are laid out in the remaining space.
+        final List<HighwayArrow> lanes = data.getLaneArrows();
+        final List<ArrowLayout> laneResult = new ArrayList<>(lanes.size());
+        float laneRowHeight = 0;
+        if (lanes.stream().anyMatch(HighwayArrow::isVisible)) {
+            float laneSize = fontLineHeight * FONT_PIXEL * data.getLaneArrowScale() * ARROW_SIZE;
+            laneRowHeight = laneSize * LINE_SPACING;
+            if (laneRowHeight > signHeight) {
+                laneSize *= signHeight / laneRowHeight;
+                laneRowHeight = signHeight;
+            }
+            final float slot = (w - 2 * PADDING) / lanes.size();
+            final float size = Math.min(laneSize, slot * LANE_ARROW_MAX_FILL);
+            final float arrowY = h - PADDING - laneRowHeight + (laneRowHeight - size) / 2.0f;
+            for (int i = 0; i < lanes.size(); i++) {
+                if (lanes.get(i).isVisible()) {
+                    laneResult.add(new ArrowLayout(lanes.get(i), PADDING + slot * (i + 0.5f) - size / 2.0f, arrowY, size));
+                }
+            }
         }
 
-        final float availableHeight = h - 2 * PADDING;
+        if (source.isEmpty()) {
+            return new HighwaySignLayout(w, h, List.of(), laneResult);
+        }
+
+        final float availableHeight = signHeight - laneRowHeight;
 
         // Vertical layout: lines keep their relative sizes, all of them shrink if they don't fit.
         float totalHeight = 0;
@@ -183,6 +219,6 @@ public final class HighwaySignLayout {
                 line.getTextColor(data.getTextColor()), line.getHighlightColor(), boxX0, boxY0, boxX1, boxY1));
             y += slotHeight;
         }
-        return new HighwaySignLayout(w, h, result);
+        return new HighwaySignLayout(w, h, result, laneResult);
     }
 }
